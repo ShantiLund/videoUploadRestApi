@@ -1,8 +1,8 @@
 const express=require('express');
+const uploadVideo=require('./models/upload.model')
 var bodyParser = require("body-parser");
-
+require('./db/db')
 const multer=require('multer');
-//const upload=multer({dest:'uploads/'});
 const storage=multer.diskStorage({
     destination:function(req,file,cb){
         cb(null,'./uploads/')
@@ -34,15 +34,41 @@ const upload=multer(
 
     }
     );
-//const uploadVideoROuter = require('./routers/uploadVideo.router');
 const port = process.env.PORT
 const app=express()
  
-// respond with "hello world" when a GET request is made to the homepage
-app.post('/hello', upload.single('video'),function (req, res) {
+// upload a video to the server and returns the response
+app.post('/upload/video', upload.single('video'),function (req, res) {
     console.log(req.file);
-  res.send('hello world')
-})
+  //create a video
+ const uploadvideo=new uploadVideo({
+    video:req.file.path
+
+});
+//save uploaded video file path  in the database.
+uploadvideo.save()
+.then(data => {
+    res.send(data);
+}).catch(err => {
+    res.status(500).send({
+       message: err.message || "Some error occurred while uploading the video."
+    });
+});
+});
+//get uploaded video link
+app.get('/getvideolink',function (req, res) {
+    //console.log(req.body);
+    uploadVideo.find()
+    .then(uploadvideo => {
+        res.send(uploadvideo);
+    }).catch(err => {
+        res.status(500).send({
+            message: err.message || "Some error occurred while retrieving videos."
+        });
+    });
+
+});
+app.use('/uploads',express.static('uploads'))
  app.listen(port, () => {
     console.log(`Server running on port ${port}`)
 })
